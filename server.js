@@ -30,7 +30,7 @@ app.get('/api/datos', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   
   try {
-    const SHAREPOINT_URL = 'https://adslhouse-my.sharepoint.com/:x:/p/efarfan/IQBroR6qt4SFRrLCmSkBrP7LARck3bLWXrxts0p9nsdTvPg?e=SS33Iz&download=1';
+    const SHAREPOINT_URL = 'https://adslhouse-my.sharepoint.com/:u:/p/efarfan/IQCusPJ4g4fFT7AzRybfEWxjAYq7evjYBdvMbX_ZTavfd2g?e=QU0lFD&download=1';
     
     const response = await fetch(SHAREPOINT_URL);
     const buffer = await response.buffer();
