@@ -1,16 +1,16 @@
 const express = require('express');
 const XLSX = require('xlsx');
 const fetch = require('node-fetch');
-const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
 // Servir archivos estáticos
-app.use(express.static(__dirname));
+app.use(express.static('.'));
 
 // Servir index.html en la raíz
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(__dirname + '/index.html');
 });
 
 // API para obtener datos del Excel
