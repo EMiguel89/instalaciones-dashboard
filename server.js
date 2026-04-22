@@ -2,16 +2,27 @@ const express = require('express');
 const XLSX = require('xlsx');
 const fetch = require('node-fetch');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
-// Servir archivos estáticos desde el directorio actual
-app.use(express.static(path.join(__dirname)));
+// Obtener directorio raíz correctamente
+const rootDir = process.cwd();
+console.log('Root directory:', rootDir);
+
+// Servir archivos estáticos
+app.use(express.static(rootDir));
 
 // Servir index.html en la raíz
 app.get('/', (req, res) => {
-  res.set('Content-Type', 'text/html');
-  res.sendFile(path.resolve(__dirname, 'index.html'));
+  const indexPath = path.join(rootDir, 'index.html');
+  console.log('Buscando index.html en:', indexPath);
+  
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('index.html no encontrado');
+  }
 });
 
 // API para obtener datos del Excel
