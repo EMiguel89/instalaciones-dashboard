@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validador JSON SharePoint</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+    h1 { color: #333; }
+    button { background: #0078d4; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #005a9e; }
+    .resultado { background: #f0f0f0; padding: 15px; border-radius: 4px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; overflow-x: auto; max-height: 400px; overflow-y: auto; }
+    .success { color: green; font-weight: bold; }
+    .error { color: red; font-weight: bold; }
+    .info { color: #333; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Validador de JSON desde SharePoint</h1>
+    
+    <p>Este validador descargará directamente el JSON de SharePoint y verificará si contiene todos los datos.</p>
+    
+    <button onclick="validarJSON()">Descargar y Validar JSON</button>
+    <button onclick="descargarJSON()" style="margin-left: 10px;">Descargar JSON (para inspeccionar manualmente)</button>
+    
+    <div class="resultado" id="resultado">
+      (Haz click en un botón para validar)
+    </div>
+  </div>
+
+  <script>
+    const SHAREPOINT_URL = 'https://adslhouse-my.sharepoint.com/:x:/p/efarfan/IQBroR6qt4SFRrLCmSkBrP7LARck3bLWXrxts0p9nsdTvPg?e=YI4r17&download=1';
+    
+    const CORS_PROXIES = [
+      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      url => `https://thingproxy.freeboard.io/fetch/${url}`,
+    ];
+
+    async function obtenerJSON() {
+      for (let i = 0; i < CORS_PROXIES.length; i++) {
+        try {
+          const proxyFn = CORS_PROXIES[i];
+          const proxyUrl = proxyFn(SHAREPOINT_URL);
+          
+          const res = await fetch(proxyUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
+          if (res.ok) {
+            const data = await res.json();
+            return data;
+          }
+        } catch(e) {
+          continue;
+        }
+      }
+      throw new Error('No se pudo descargar desde ningún proxy');
+    }
+
+    async function validarJSON() {
+      const resultado = document.getElementById('resultado');
+      resultado.innerHTML = '🔄 Descargando...';
+
+      try {
+        const data = await obtenerJSON();
+        const rawText = JSON.stringify(data);
+        const sizeKB = (rawText.length / 1024).toFixed(2);
+
+        let registros = 0;
+        if (Array.isArray(data)) {
+          registros = data.length;
+        } else if (data.data && Array.isArray(data.data)) {
+          registros = data.data.length;
+        } else {
+          for (const key in data) {
+            if (Array.isArray(data[key])) {
+              registros = data[key].length;
+              break;
+            }
+          }
+        }
+
+        let html = '<div class="success">✅ JSON descargado exitosamente</div><br>';
+        html += `<div class="info">📊 <strong>Tamaño:</strong> ${sizeKB} KB</div>`;
+        html += `<div class="info">📦 <strong>Registros encontrados:</strong> ${registros}</div>`;
+        
+        if (registros < 5) {
+          html += `<div class="error">⚠️ ALERTA: Solo hay ${registros} registros. Esto parece incompleto.</div>`;
+        } else if (registros > 50) {
+          html += `<div class="success">✓ Parece estar completo (${registros} registros es una cantidad normal)</div>`;
+        }
+
+        html += '<br><div class="info"><strong>Estructura encontrada:</strong></div>';
+        html += '<pre>' + JSON.stringify(data, null, 2).substring(0, 500) + '...</pre>';
+
+        resultado.innerHTML = html;
+      } catch(e) {
+        resultado.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+      }
+    }
+
+    async function descargarJSON() {
+      try {
+        const resultado = document.getElementById('resultado');
+        resultado.innerHTML = '🔄 Descargando...';
+        
+        const data = await obtenerJSON();
+        
+        // Crear blob y descargar
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'datos_sharepoint.json';
+        a.click();
+        
+        resultado.innerHTML = '<div class="success">✅ Archivo descargado: datos_sharepoint.json</div>';
+      } catch(e) {
+        resultado.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
