@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificar Columnas del Excel</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+    h1 { color: #333; }
+    button { background: #0078d4; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #005a9e; }
+    .resultado { background: #f0f0f0; padding: 15px; border-radius: 4px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; overflow-x: auto; max-height: 600px; overflow-y: auto; }
+    .success { color: green; font-weight: bold; }
+    .error { color: red; font-weight: bold; }
+    .info { color: #333; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #0078d4; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Verificar Columnas del Excel</h1>
+    
+    <p>Este validador descargará el Excel de SharePoint y te mostrará exactamente qué columnas tiene.</p>
+    
+    <button onclick="validarExcel()">Descargar y Ver Columnas</button>
+    
+    <div class="resultado" id="resultado">
+      (Haz click en el botón para analizar)
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    const SHAREPOINT_URL = 'https://adslhouse-my.sharepoint.com/:x:/p/efarfan/IQBroR6qt4SFRrLCmSkBrP7LARck3bLWXrxts0p9nsdTvPg?e=SS33Iz&download=1';
+
+    async function validarExcel() {
+      const resultado = document.getElementById('resultado');
+      resultado.innerHTML = '🔄 Descargando Excel...';
+
+      try {
+        // Descargar el archivo
+        const response = await fetch(SHAREPOINT_URL);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(worksheet);
+
+        // Analizar
+        const columnas = data.length > 0 ? Object.keys(data[0]) : [];
+        const registros = data.length;
+
+        let html = '<div class="success">✅ Excel descargado exitosamente</div><br>';
+        html += `<div class="info"><strong>📊 Total de registros:</strong> ${registros}</div>`;
+        html += `<div class="info"><strong>📋 Total de columnas:</strong> ${columnas.length}</div>`;
+        
+        html += '<h3>Columnas encontradas:</h3>';
+        html += '<table><tr><th>Nombre de Columna</th><th>Ejemplo de Valor</th></tr>';
+        
+        columnas.forEach(col => {
+          const valor = data[0][col] !== undefined ? data[0][col] : '(vacío)';
+          html += `<tr><td><code>${col}</code></td><td>${valor}</td></tr>`;
+        });
+        
+        html += '</table>';
+
+        html += '<br><h3>Primeros 3 registros (JSON):</h3>';
+        html += '<pre>' + JSON.stringify(data.slice(0, 3), null, 2) + '</pre>';
+
+        resultado.innerHTML = html;
+      } catch(e) {
+        resultado.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
